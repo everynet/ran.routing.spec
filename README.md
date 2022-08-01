@@ -1,6 +1,6 @@
 # Everynet RAN Routing API Specification
 
-> Note: This document is a draft specification of the RAN Routing API
+> Note: This document is a draft (beta) specification of the RAN Routing API
 
 
 ## Table of contents
