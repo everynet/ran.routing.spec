@@ -6,7 +6,8 @@
 ## Table of contents
 
 - [Introduction](#Introduction)
-- [Subscription Management](#Subscription-Management)
+- [Subscription Management](#subscription-management)
+- [Multicast Management](#Multicast-Management)
 - [Message Streaming](#message-streaming)
 - [Upstream Traffic](#upstream-traffic)
 - [Downstream Traffic](#downstream-traffic)
@@ -31,9 +32,9 @@ There are several benefits to this first implementation. The most obvious is tha
 
 ## Introduction
 
-This API is intended to connect Everynet Cloud RAN (RAN) with customer LoRaWAN Network Server (LNS). The API is LNS-agnostic. 
+This API is intended to connect Everynet Cloud RAN (RAN) with customer LoRaWAN Network Server (LNS). The API is LNS-agnostic.
 
-Everynet RAN core funtionality is LoRaWAN traffic routing.  It receives messages from gateways and then matches each message with the _customer_ using either _DevAddr_ or pair _(DevEUI, JoinEUI)_. **The relations between device details and customer details are stored in a routing table.** 
+Everynet RAN core funtionality is LoRaWAN traffic routing.  It receives messages from gateways and then matches each message with the _customer_ using either _DevAddr_ or pair _(DevEUI, JoinEUI)_. **The relations between device details and customer details are stored in a routing table.**
 
 Everynet RAN API is designed to let customer control the routing table. It also provides both upstream and downstream messaging capabilities.
 
@@ -62,11 +63,11 @@ The methods are HTTP-based and are not available via WebSocket interface.
 
 ### Devices.Select
 
-Select device subscriptions from the routing table. 
+Select device subscriptions from the routing table.
 
 List of devices is specified via `DevEUIs` parameter. If `DevEUIs` parameter is not set, then all device subscriptions are returned.
 
-**Params info:** 
+**Params info:**
 | Param | Required | Type | Description |
 | --- | --- | --- | --- |
 | `CoverageID` | yes | int | This ID refers to one of the available Everynet network deployments: Brazil, Indonesia, USA, Italy, Spain, UK, ... |
@@ -80,7 +81,7 @@ Select multiple devices data:
 
 ```bash
 
-$ curl -s --request GET 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/select' \
+$ curl -s --request GET 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/select' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' | jq
 [
@@ -114,7 +115,7 @@ $ curl -s --request GET 'http://ranapi.everynet.com/api/v1.0/subscription/1/devi
 Select single device data:
 
 ```bash
-$ curl -s --request GET 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/select?DevEUIs=ffffffffffffffff&DevEUIs=dddddddddddddddd' \                                                                   
+$ curl -s --request GET 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/select?DevEUIs=ffffffffffffffff&DevEUIs=dddddddddddddddd' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' | jq
 [
@@ -140,17 +141,17 @@ $ curl -s --request GET 'http://ranapi.everynet.com/api/v1.0/subscription/1/devi
 
 ### Devices.Insert
 
-Subscribe to the device messages. Insert device into the routing table to start receiving messages from the specified device. 
+Subscribe to the device messages. Insert device into the routing table to start receiving messages from the specified device.
 
-Both `DevEUI` and `DevAddr` are mandatory parameters for ABP devices. while `DevEUI` and `JoinEUI` are mandatory parameters for OTAA devices. 
+Both `DevEUI` and `DevAddr` are mandatory parameters for ABP devices. while `DevEUI` and `JoinEUI` are mandatory parameters for OTAA devices.
 
-Provided `DevEUI` must be unique, while single `DevAddr` may be assigned to several `DevEUIs` simultaneously. 
+Provided `DevEUI` must be unique, while single `DevAddr` may be assigned to several `DevEUIs` simultaneously.
 
 For some NetID types, the DevAddr space is much smaller than the number of possible DevEUIs and it is possible that multiple devices (DevEUIs) share the same DevAddr. RAN supports mupliple DevEUIs pointing to one DevAddr and provides an array of DevEUIs in the `Upstream` message. It is expected that LNS provides a correct `DevEUI` in the `UpstreamAck` message.
 
 Optional `Details` field provides additional device information, such as geographical coordinates or device model.
 
-**Params info:** 
+**Params info:**
 | Param | Required | Type | Description |
 | --- | --- | --- | --- |
 | `CoverageID` | yes | int | This ID refers to one of the available Everynet network deployments: Brazil, Indonesia, USA, Italy, Spain, UK, ... |
@@ -169,17 +170,17 @@ Create device with a known DevEUI and JoinEUI:
 
 ```json
 {
-    "DevEUI": "ffffffffffffffff", 
+    "DevEUI": "ffffffffffffffff",
     "JoinEUI": "ffffffffffffffff"
 }
 ```
 
 ```bash
-$ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/insert' \ 
+$ curl -s --request POST 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/insert' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' \
 --data-raw '{
-"DevEUI":  "ffffffffffffffff", 
+"DevEUI":  "ffffffffffffffff",
 "JoinEUI": "ffffffffffffffff"
 }' | jq
 
@@ -202,7 +203,7 @@ Create device with a known DevAddr:
 ```
 
 ```bash
-$ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/insert' \
+$ curl -s --request POST 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/insert' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' \
 --data-raw '{
@@ -222,14 +223,14 @@ $ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/dev
 
 ### Devices.Update
 
-Update device subscription in a routing table by `DevEUI`. This API function is intended to be used by the LNS to set new device address after the join request has been processed. Optional parameters that are ommited won't be updated, `null` values are not allowed. 
+Update device subscription in a routing table by `DevEUI`. This API function is intended to be used by the LNS to set new device address after the join request has been processed. Optional parameters that are ommited won't be updated, `null` values are not allowed.
 
 Parameters `ActiveDevAddr` and `TargetDevAddr` are used to handle two security contexts during the join procedure. The security-context is only switched after the device sends its first uplink with `TargetDevAddr`. It is valid for both LoRaWAN 1.0.x and 1.1.
 
 At least one of `ActiveDevAddr` or `TargetDevAddr` values must be provided.
 
 
-**Params info:** 
+**Params info:**
 | Param | Required | Type | Description |
 | --- | --- | --- | --- |
 | `CoverageID` | yes | int | This ID refers to one of the available Everynet network deployments: Brazil, Indonesia, USA, Italy, Spain, UK, ... |
@@ -243,7 +244,7 @@ At least one of `ActiveDevAddr` or `TargetDevAddr` values must be provided.
 
 ```json
 {
-    "DevEUI": "ffffffffffffffff", 
+    "DevEUI": "ffffffffffffffff",
     "JoinEUI": "ffffffffffffffff",
     "TargetDevAddr": "ffffffff"
 }
@@ -252,7 +253,7 @@ At least one of `ActiveDevAddr` or `TargetDevAddr` values must be provided.
 
 ```bash
 $ # This call is not required, here is just for example to see the difference after update
-$ curl -s --request GET 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/select?DevEUIs=ffffffffffffffff' \                                                                   
+$ curl -s --request GET 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/select?DevEUIs=ffffffffffffffff' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' | jq
 [
@@ -266,13 +267,13 @@ $ curl -s --request GET 'http://ranapi.everynet.com/api/v1.0/subscription/1/devi
   }
 ]
 
-$ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/update' \
+$ curl -s --request POST 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/update' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' \
 --data-raw '{
 "DevEUI": "ffffffffffffffff",
 "JoinEUI": "ffffffffffffffff",
-"TargetDevAddr": "ffffffff"  
+"TargetDevAddr": "ffffffff"
 }' | jq
 
 {
@@ -290,7 +291,7 @@ $ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/dev
 
 Deletes device subscription from the routing table by `DevEUI`.
 
-**Params info:** 
+**Params info:**
 | Param | Required | Type | Description |
 | --- | --- | --- | --- |
 | `CoverageID` | yes | int | This ID refers to one of the available Everynet network deployments: Brazil, Indonesia, USA, Italy, Spain, UK, ... |
@@ -308,7 +309,7 @@ Deletes device subscription from the routing table by `DevEUI`.
 ```
 
 ```bash
-$ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/drop' \  
+$ curl -s --request POST 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/drop' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' \
 --data-raw '{"DevEUIs": ["ffffffffffffffff"]}' | jq
@@ -323,7 +324,7 @@ $ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/dev
 
 Deletes all device subscriptions from the routing table.
 
-**Params info:** 
+**Params info:**
 | Param | Required | Type | Description |
 | --- | --- | --- | --- |
 | `CoverageID` | yes | int | This ID refers to one of the available Everynet network deployments: Brazil, Indonesia, USA, Italy, Spain, UK, ... |
@@ -333,7 +334,7 @@ Deletes all device subscriptions from the routing table.
 #### Example
 
 ```bash
-$ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/devices/drop-all' \  
+$ curl -s --request POST 'https://ranapi.everynet.com/api/v1.0/subscription/1/devices/drop-all' \
 --header 'Authorization: Bearer secrettoken' \
 --header 'Content-Type: application/json' \
 
@@ -345,6 +346,187 @@ $ curl -s --request POST 'http://ranapi.everynet.com/api/v1.0/subscription/1/dev
 
 ---
 
+## Multicast Management
+
+This API provides management multicast group (create, delete) and management of devices in those groups (add, remove).
+
+To start sending multicast downlinks AS must create multicast group and  add devices to this group and then send multicast-downlink.
+
+The methods are HTTP-based and are not available via WebSocket interface.
+
+
+| Method | Description |
+| ------ | ----------- |
+| [create_multicast_group(name, addr)](#Create-multicast-group) | This method provides to create multicast group. |
+| [delete_multicast_groups(List[addr])](#Delete-multicast-group) | This method provides to remove multicast group by group addr. |
+| [get_multicast_groups(List[addr])](#Get-multicast-groups) | This method provides to show multicast groups with all devices by specified list of addrs, if list is empty then this method return all multicast groups. |
+| [add_device_to_multicast_group(addr, dev_eui)](#Add-device-to-multicast-group) | This method provides to add the device to a specified multicast group. |
+| [remove_device_from_multicast_group(addr, dev_eui)](#Remove-device-from-multicast-group) | This method provides to remove the device from a specified multicast group. |
+
+
+### Create multicast group
+
+Creates new multicast group.
+
+If multicast group with this `addr` already exists, will return error.
+
+**Params info:**
+| Param | Required | Type | Description |
+| --- | --- | --- | --- |
+| `name` | yes | str | Multicast group name |
+| `addr` | yes | str | Hex string representing address of multicast group. This address may be used to send downlinks |
+
+#### Example
+
+```bash
+curl -X 'POST' \
+  'https://ranapi.everynet.com/api/v1.0/multicast-groups/create' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <access_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "name": "My first multicast group",
+  "addr": "dafa0c11"
+}' | jq
+
+{
+  "addr": "dafa0c11",
+  "created_at": "2022-08-26T13:35:30.969638",
+  "name": "My first multicast group",
+  "devices": []
+}
+```
+
+### Delete multicast groups
+
+Deletes multicast groups.
+
+If no multicast group with this `addr` exists, it won't be deleted.
+
+**Params info:**
+| Param | Required | Type | Description |
+| --- | --- | --- | --- |
+| `addrs` | yes | str[] | Array of hex string, each represents address of multicast group, which must be deleted |
+
+
+#### Example
+
+```bash
+curl -s -X 'POST' \
+  'https://ranapi.everynet.com/api/v1.0/multicast-groups/delete' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <access_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "addrs": ["dafa0c11"]
+}' | jq
+
+{
+  "deleted": 1
+}
+```
+
+### Get multicast groups
+
+Get info about multicast groups.
+
+If empty `addrs` provided, will return all multicast groups you have.
+
+**Params info:**
+| Param | Required | Type | Description |
+| --- | --- | --- | --- |
+| `addrs` | yes | str[] | Aray of hex strings, each represents multicast group addresses |
+
+
+#### Example
+
+```bash
+curl -s -X 'POST' \
+  'https://ranapi.everynet.com/api/v1.0/multicast-groups/get' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <access_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "addrs": []
+}' | jq
+
+[
+  {
+    "created_at": "2022-08-26T13:35:30.969638",
+    "name": "My first multicast group",
+    "addr": "dafa0c11",
+    "devices": [
+      "fafafafafafafafa",
+      "fafafafafafafafb",
+      "fafafafafafafafc"
+    ]
+  }
+```
+
+### Add device to multicast group
+
+Adds device to multicast group.
+
+If no multicast group with this `addr` exists, will return error.
+
+If not device with this `dev_eui` exists, will return error.
+
+**Params info:**
+| Param | Required | Type | Description |
+| --- | --- | --- | --- |
+| `addr` | yes | str | Hex string representing address of multicast group you want to use to add device in it. |
+| `dev_eui` | yes | str | Hex string representing dev_eui of device you want to add to multicast group. |
+
+
+#### Example
+
+```bash
+curl -s -X 'POST' \
+  'https://ranapi.everynet.com/api/v1.0/multicast-groups/add-device' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <access_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "addr": "dafa0c11",
+  "dev_eui": "fafafafafafafafa"
+}' | jq
+
+{
+  "is_added": true
+}
+```
+
+### Remove device from multicast group
+
+Removes device from multicast group.
+
+If no multicast group with this `addr` exists, will return `{"is_removed": false}`.
+
+If not device with this `dev_eui` exists, will return `{"is_removed": false}`.
+
+**Params info:**
+| Param | Required | Type | Description |
+| --- | --- | --- | --- |
+| `addr` | yes | str | Hex string representing address of multicast group you want to use to remove device from. |
+| `dev_eui` | yes | str | Hex string representing dev_eui of device you want to remove from multicast group. |
+
+#### Example
+
+```bash
+curl -s -X 'POST' \
+  'https://ranapi.everynet.com/api/v1.0/multicast-groups/remove-device' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <access_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "addr": "dafa0c11",
+  "dev_eui": "fafafafafafafafa"
+}' | jq
+
+{
+  "is_removed": true
+}
+```
 
 ## Message Streaming
 
@@ -398,6 +580,7 @@ Here is list of messages related to the downstream traffic between RAN and LNS.
 | Message | Direction | Description |
 | ------- | --------- | ----------- |
 | [Downstream](#downstream-message) |  LNS -> RAN | Downstream (join accept or downlink) message that LNS is willing to send to the device. |
+| [MulticastDownstream](#multicast-downstream-message) |  LNS -> RAN | Downstream (join accept or downlink) message that LNS is willing to send to the multicast group of devices |
 | [DownstreamAck](#downstreamack-message) |  RAN -> LNS | Confirmation of Downstream message reception by the RAN. |
 | [DownstreamResult](#downstreamresult-message) |  RAN -> LNS | Result of Downstream message transmission. Can be transmitted or discarded due to different reasons (regulatory restrictions, lack of gateway capacity, etc.) |
 
@@ -510,6 +693,37 @@ Downstream messages could only be sent to the devices with active subscription. 
 }
 ```
 
+### Multicast Downstream Message
+
+| Field | Type | Mandatory | Description |
+| ----- | ---- | ----------- | ---- |
+| `ProtocolVersion` | UInt32 | True | RAN protocol version |
+| `TransactionID` | UInt64 | True | Unique Downstream identifier provided by the LNS. It is requred to associate `DownstreamAck` and `DownstreamResult` with this downstream message later. |
+| `Addr` | UInt64 | True | Address of Multicast Group |
+| `TxWindow` | [TransmissionWindow](#Transmission-Window) | True | Transmission window object |
+| `PHYPayload` | UInt8[] | True | Full PHYPayload |
+
+
+#### Example
+```json
+{
+	"ProtocolVersion": 1,
+	"TransactionID": 1,
+	"DevEUI": 8844537008791951183,
+	"TxWindow": {
+		"Radio": {
+			"Frequency": 868300000,
+			"LoRa": {
+				"Spreading": 12,
+				"Bandwidth": 125000
+			}
+		},
+		"Delay": 5
+	},
+	"PHYPayload": [97, 98, 97, 98]
+}
+```
+
 ### DownstreamAck
 
 Reception of this message means that RAN received a `Downstream` message from LNS and about to process it.
@@ -574,7 +788,7 @@ Reception of this message means that RAN received `Downstream` message from LNS 
 
 | Field | Type | Mandatory | Description |
 | ----- | ---- | --------- | ----------- |
-| `Delay` | UInt4 | True for Class A | Used for Class A downlinks. Delays are measured using the last acknowledged `Upstream` message for the same DevEUI (no need to provide UpstreamID). Such a message is automatically identified by the RAN. |
+| `Delay` | UInt4 | True for Class A | Used for Class A downlinks. Delays are measured using the last acknowledged `Upstream` message for the same DevEUI (no need to provide UpstreamID). Such a message is automatically identified by the RAN. Not used on [MulticastDownstream](#Multicast-Downstream-Message). |
 | `TMMS`  | Uint64[] | True for Class B | GPS-time transmission slots for Class B messages. Not more than 8 slots. |
 | `Deadline` | Timestamp | True for Class C | Transmission deadline for Class C downlink. RAN will schedule downlink till the deadline (if possible). Default and maximum deadline value is now + 512 seconds. |
 | `Radio` | [Radio](#radio-model) | True | [Radio](#radio-model) transmission parameters |
